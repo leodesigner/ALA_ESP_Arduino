@@ -1,6 +1,6 @@
 #include "AlaLed.h"
 
-#include "ExtTlc5940.h"
+//#include "ExtTlc5940.h"
 
 
 AlaLed::AlaLed()
@@ -10,6 +10,13 @@ AlaLed::AlaLed()
     animSeqLen = 0;
     lastRefreshTime = 0;
     refreshMillis = 1000/50;
+    britness_level[0] = 0;
+    britness_level[1] = 85;
+    britness_level[2] = 170;
+    britness_level[3] = 255;
+    animation_step = 0;
+    animation = ALA_STOPSEQ;
+    //animation_last = ALA_STOPSEQ;
 }
 
 
@@ -28,6 +35,7 @@ void AlaLed::initPWM(int numLeds, byte *pins)
     this->driver = ALA_PWM;
     this->numLeds = numLeds;
     this->pins = pins;
+    analogWriteRange(255);
 
     for (int x=0; x<numLeds ; x++)
     {
@@ -35,10 +43,16 @@ void AlaLed::initPWM(int numLeds, byte *pins)
     }
 
     // allocate and clear leds array
-    leds = (byte *)malloc(numLeds);
-    memset(leds, 0, numLeds);
+    leds = (int16_t *)malloc(numLeds * sizeof(int16_t));
+    memset(leds, 0, numLeds * sizeof(int16_t));
 }
 
+void AlaLed::setDriver(byte driver) 
+{
+        this->driver = driver;
+}
+
+/*
 void AlaLed::initTLC5940(int numLeds, byte *pins)
 {
     this->driver = ALA_TLC5940;
@@ -57,10 +71,10 @@ void AlaLed::initTLC5940(int numLeds, byte *pins)
         isTlcInit=true;
     }
 }
+*/
 
 
-
-void AlaLed::setBrightness(byte maxOut)
+void AlaLed::setBrightness(uint16_t maxOut)
 {
     this->maxOut = maxOut;
 }
@@ -71,16 +85,20 @@ void AlaLed::setRefreshRate(int refreshRate)
 }
 
 
-void AlaLed::setAnimation(int animation, long speed, bool isSeq)
+void AlaLed::setAnimation(uint8_t animation, uint32_t speed, bool isSeq)
 {
-    if (this->animation == animation && this->speed == speed)
+    if (this->animation == animation && this->speed == speed) 
+    {
+        this->animation_step++;
         return;
+    }
 
+    this->animation_step = 0;
     this->animation = animation;
     this->speed = speed;
 
 	if (!isSeq)
-		animSeqLen=0;
+		animSeqLen = 0;
 	setAnimationFunc(animation);
     animStartTime = millis();
 }
@@ -92,15 +110,16 @@ void AlaLed::setAnimation(AlaSeq animSeq[])
 
     // initialize animSeqDuration and animSeqLen variables
     animSeqDuration = 0;
-    for(animSeqLen=0; animSeq[animSeqLen].animation!=ALA_ENDSEQ; animSeqLen++)
+    for (animSeqLen = 0; animSeq[animSeqLen].animation != ALA_ENDSEQ; animSeqLen++)
     {
         animSeqDuration = animSeqDuration + animSeq[animSeqLen].duration;
     }
     animSeqStartTime = millis();
+    this->duration = animSeq[0].duration;
     setAnimation(animSeq[0].animation, animSeq[0].speed, true);
 }
 
-void AlaLed::setSpeed(long speed)
+void AlaLed::setSpeed(uint32_t speed)
 {
     this->speed = speed;
 	animStartTime = millis();
@@ -115,11 +134,11 @@ int AlaLed::getAnimation()
 
 bool AlaLed::runAnimation()
 {
-    if(animation == ALA_STOPSEQ)
+    if (animation == ALA_STOPSEQ)
         return true;
 
     // skip the refresh if not enough time has passed since last update
-    unsigned long cTime = millis();
+    uint32_t cTime = millis();
     if (cTime < lastRefreshTime + refreshMillis)
         return false;
 
@@ -128,41 +147,59 @@ bool AlaLed::runAnimation()
 
     lastRefreshTime = cTime;
 
+    // run the animantion calculation
+    if (animFunc != NULL)
+        (this->*animFunc)();
+
+    for (uint8_t x = 0; x < numLeds; x++)
+    {
+        if (leds[x] > MAX_PWM_VAL) leds[x] = MAX_PWM_VAL;
+        if (leds[x] < MIN_PWM_VAL) leds[x] = MIN_PWM_VAL;
+    }
+
+    #ifdef DEBUGPRINTS
+    Serial.print(animation_step);
+    Serial.print(" led val-> ");
+    Serial.println(leds[0]);
+    #endif
+
+    // update leds
+    if (driver == ALA_PWM)
+    {
+        for (uint8_t i = 0; i < numLeds; i++)
+            analogWrite(pins[i], leds[i]);
+    }
+    if (driver == ALA_PWM_INVERTED) 
+    {
+        for (uint8_t i = 0; i < numLeds; i++)
+            analogWrite(pins[i], 255 - leds[i]);
+    }
+//    if (driver == ALA_TLC5940)
+//    {
+//       for(int i=0; i<numLeds; i++)
+//           Tlc.set(pins[i], leds[i]*16);
+//
+//       Tlc.update();
+//    }
+
+
     // if it's a sequence we have to calculate the current animation
     if (animSeqLen != 0)
     {
-        long c = 0;
-        long t = (cTime-animSeqStartTime) % animSeqDuration;
-        for(int i=0; i<animSeqLen; i++)
+        uint32_t c = 0;
+        uint32_t t = (cTime - animSeqStartTime) % animSeqDuration;
+        for (uint16_t i = 0; i < animSeqLen; i++)
         {
-            if (t>=c && t<(c+animSeq[i].duration))
+            if (t >= c && t < (c + animSeq[i].duration))
             {
                 setAnimation(animSeq[i].animation, animSeq[i].speed, true);
+                this->duration = animSeq[i].duration;
                 break;
             }
             c = c + animSeq[i].duration;
         }
     }
 
-
-    // run the animantion calculation
-    if (animFunc != NULL)
-        (this->*animFunc)();
-
-    // update leds
-    if(driver==ALA_PWM)
-    {
-        for(int i=0; i<numLeds; i++)
-            analogWrite(pins[i], leds[i]);
-    }
-    else if(driver==ALA_TLC5940)
-    {
-        for(int i=0; i<numLeds; i++)
-            Tlc.set(pins[i], leds[i]*16);
-
-        Tlc.update();
-    }
-    
     return true;
 }
 
@@ -171,7 +208,7 @@ bool AlaLed::runAnimation()
 ///////////////////////////////////////////////////////////////////////////////
 
 
-void AlaLed::setAnimationFunc(int animation)
+void AlaLed::setAnimationFunc(uint8_t animation)
 {
     switch(animation)
     {
@@ -201,6 +238,15 @@ void AlaLed::setAnimationFunc(int animation)
         case ALA_GLOW:                  animFunc = &AlaLed::glow;                  break;
         case ALA_FLAME:                 animFunc = &AlaLed::flame;                 break;
 
+        case ALA_FADETO:                animFunc = &AlaLed::fadeTo;                break;
+
+        case ALA_SET_LEVEL0:            animFunc = &AlaLed::setLevel0;             break;
+        case ALA_SET_LEVEL1:            animFunc = &AlaLed::setLevel1;             break;
+        case ALA_SET_LEVEL2:            animFunc = &AlaLed::setLevel2;             break;
+        case ALA_SET_LEVEL3:            animFunc = &AlaLed::setLevel3;             break;
+
+        case ALA_STOPSEQ:               animFunc = &AlaLed::skip;                  break;
+
         default:                        animFunc = &AlaLed::off;
     }
 }
@@ -224,6 +270,11 @@ void AlaLed::off()
     {
         leds[i] = 0;
     }
+}
+
+void AlaLed::skip()
+{
+    return;
 }
 
 
@@ -263,7 +314,7 @@ void AlaLed::sparkle2()
     int p = speed/10;
     for(int x=0; x<numLeds; x++)
     {
-        if(random(p)==0)
+        if (random(p)==0)
             leds[x] = maxOut;
         else
             leds[x] = leds[x] * 0.88;
@@ -427,8 +478,8 @@ void AlaLed::larsonScanner2()
 
 void AlaLed::fadeIn()
 {
-    int s = getStep(animStartTime, speed, maxOut);
-    for(int x=0; x<numLeds; x++)
+    int16_t s = getStep(animStartTime, speed, maxOut);
+    for (uint8_t x=0; x<numLeds; x++)
     {
         leds[x] = s;
     }
@@ -437,21 +488,22 @@ void AlaLed::fadeIn()
 
 void AlaLed::fadeOut()
 {
-    int s = getStep(animStartTime, speed, maxOut);
-    for(int x=0; x<numLeds; x++)
+    int16_t s = getStep(animStartTime, speed, maxOut);
+    for (uint8_t x=0; x<numLeds; x++)
     {
-        leds[x] = abs(maxOut-s);
+        leds[x] = maxOut - s;
     }
 }
 
 
 void AlaLed::fadeInOut()
 {
-    int s = getStep(animStartTime, speed, 2*maxOut) - maxOut;
+    int16_t s = getStep(animStartTime, speed, 2*maxOut) - maxOut;
 
-    for(int x=0; x<numLeds; x++)
+    for (uint8_t x=0; x<numLeds; x++)
     {
-        leds[x] = abs(maxOut-abs(s));
+        // leds[x] = abs(maxOut-abs(s));
+        leds[x] = maxOut - abs(s);
     }
 }
 
@@ -473,4 +525,58 @@ void AlaLed::flame()
         if (random(4) == 0)
             leds[x] = map(random(30)+70, 0, 100, 0, maxOut);
     }
+}
+
+// FADETO LEVEL_N DURATION
+void AlaLed::fadeTo()
+{   //   return ( (millis()-animStartTime) % duration ) * v / duration; 
+    uint8_t bln = speed;
+    static uint8_t current_level = 0;
+
+    if (bln >= MAX_B_LEVELS) bln = MAX_B_LEVELS - 1; // limit number of predefined leveles
+
+    if (this->animation_step < 2)
+    {
+        Serial.print("* Start FADETO * > ");
+        Serial.println(animation_step);
+        current_level = leds[0];
+        Serial.print("Current level is: ");
+        Serial.println(current_level);
+        Serial.print("Fading to: ");
+        Serial.println(britness_level[bln]);
+    }
+
+    // !!! duration ! 
+    int16_t s = 0;
+    if (britness_level[bln] > current_level) {
+        s = current_level + getStep(animStartTime, duration, britness_level[bln] - current_level);
+    } else {
+        s = current_level - getStep(animStartTime, duration, current_level - britness_level[bln]);
+    }
+
+    for (uint8_t x = 0; x < numLeds; x++)
+    {
+        leds[x] = s;
+    }
+}
+
+
+void AlaLed::setLevel0()
+{
+    britness_level[0] = speed;
+}
+
+void AlaLed::setLevel1()
+{
+    britness_level[1] = speed;
+}
+
+void AlaLed::setLevel2()
+{
+    britness_level[2] = speed;
+}
+
+void AlaLed::setLevel3()
+{
+    britness_level[3] = speed;
 }

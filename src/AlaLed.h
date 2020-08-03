@@ -3,6 +3,24 @@
 
 #include "Ala.h"
 
+#define DEBUGPRINTS
+#define MAX_PWM_VAL 255
+#define MIN_PWM_VAL 0
+
+#pragma pack(push, 1)
+
+struct AlaSeq
+{
+    uint8_t animation;
+    uint16_t speed;
+    uint16_t duration;
+    // AlaPalette palette;
+};
+
+#pragma pack(pop)
+
+
+#define MAX_B_LEVELS 4
 
 /**
  *  AlaLed can be used to drive a single or multiple output channels to perform animations.
@@ -43,13 +61,13 @@ public:
     *
     * It can be used also to drive a single led.
     */
-    void initTLC5940(int numLeds, byte *pins);
+    // void initTLC5940(int numLeds, byte *pins);
 
 
     /**
     * Sets the maximum brightness level (0-255).
     */
-    void setBrightness(byte maxOut);
+    void setBrightness(uint16_t maxOut);
 
     /**
     * Sets the maximum refresh rate in Hz (default value is 50 Hz).
@@ -59,19 +77,23 @@ public:
 
     int getRefreshRate();
 
-    void setAnimation(int animation, long speed, bool isSeq=false);
+    void setAnimation(uint8_t animation, uint32_t speed, bool isSeq=false);
     void setAnimation(AlaSeq animSeq[]);
-	void setSpeed(long speed);
+	void setSpeed(uint32_t speed);
     int getAnimation();
 
     bool runAnimation();
 
+    // set LED driver
+    void setDriver(byte driver = ALA_PWM);
+
 
 private:
 
-    void setAnimationFunc(int animation);
+    void setAnimationFunc(uint8_t animation);
     void on();
     void off();
+    void skip();
     void blink();
     void blinkAlt();
     void sparkle();
@@ -96,26 +118,37 @@ private:
     void glow();
     void flame();
 
+    void fadeTo();
+    void setLevel0();
+    void setLevel1();
+    void setLevel2();
+    void setLevel3();
+
 
     byte driver; // type of led driver: ALA_PWM, ALA_TLC5940
     byte *pins;  // pins where the leds are attached to
-    byte *leds;  // array to store leds brightness values
-    int numLeds; // number of leds
+    int16_t *leds;  // array to store leds brightness values
+    uint8_t numLeds; // number of leds
 
-    int maxOut;
-    int refreshMillis;
-    int refreshRate;   // current refresh rate
+    uint16_t animation_step = 0;
+    uint8_t britness_level[MAX_B_LEVELS];
 
-    int animation;
-    long speed;
+    int16_t maxOut;
+    uint16_t refreshMillis;
+    uint16_t refreshRate;   // current refresh rate
+
+    uint8_t animation;
+    //uint8_t animation_last;
+    uint32_t speed;
+    uint32_t duration;
     AlaSeq *animSeq;
-    int animSeqLen;
-    long animSeqDuration;
+    uint16_t animSeqLen;
+    uint32_t animSeqDuration;
 
     void (AlaLed::*animFunc)();
-    unsigned long animStartTime;
-    unsigned long animSeqStartTime;
-    unsigned long lastRefreshTime;
+    uint32_t animStartTime;
+    uint32_t animSeqStartTime;
+    uint32_t lastRefreshTime;
 
 };
 

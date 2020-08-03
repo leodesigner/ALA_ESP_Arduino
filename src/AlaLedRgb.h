@@ -3,6 +3,17 @@
 
 #include "Ala.h"
 
+#pragma pack(push, 1)
+
+struct AlaSeq
+{
+    uint8_t animation;
+    uint16_t speed;
+    uint16_t duration;
+    AlaPalette palette;
+};
+
+
 #include "ExtNeoPixel.h"
 
 /**

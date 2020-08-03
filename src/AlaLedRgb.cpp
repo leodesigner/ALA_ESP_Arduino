@@ -2,7 +2,7 @@
 #include "AlaLedRgb.h"
 
 #include "ExtNeoPixel.h"
-#include "ExtTlc5940.h"
+//#include "ExtTlc5940.h"
 
 
 
@@ -61,7 +61,7 @@ void AlaLedRgb::initTLC5940(int numLeds, byte *pins)
     static bool isTlcInit = false;
     if(!isTlcInit)
     {
-        Tlc.init(0);
+        //Tlc.init(0);
         isTlcInit=true;
     }
 }
@@ -231,14 +231,14 @@ bool AlaLedRgb::runAnimation()
     else if(driver==ALA_TLC5940)
     {
         // TLC5940 maximum output is 4095 so shifts only 4 bits
-        for(int i=0; i<numLeds; i++)
-        {
-            int j = 3*i;
-            Tlc.set(pins[j],   (leds[i].r*maxOut.r)>>4);
-            Tlc.set(pins[j+1], (leds[i].g*maxOut.g)>>4);
-            Tlc.set(pins[j+2], (leds[i].b*maxOut.b)>>4);
-        }
-        Tlc.update();
+        //for(int i=0; i<numLeds; i++)
+        //{
+        //    int j = 3*i;
+            //Tlc.set(pins[j],   (leds[i].r*maxOut.r)>>4);
+            //Tlc.set(pins[j+1], (leds[i].g*maxOut.g)>>4);
+            //Tlc.set(pins[j+2], (leds[i].b*maxOut.b)>>4);
+        //}
+        //Tlc.update();
     }
     else if(driver==ALA_WS2812)
     {
@@ -464,7 +464,7 @@ void AlaLedRgb::cometCol()
     AlaColor c;
     for(int x=0; x<numLeds; x++)
     {
-        float tx = mapfloat(max(t-x, 0), 0, numLeds/1.7, 0, palette.numColors-1);
+        float tx = mapfloat(_max(t-x, 0), 0, numLeds/1.7, 0, palette.numColors-1);
         c = palette.getPalColor(tx);
         float k = constrain( (((x-t)/l+1.2f))*(((x-t)<0)? 1:0), 0, 1);
         leds[x] = c.scale(k);
@@ -669,7 +669,7 @@ void AlaLedRgb::fire()
     int rMax = (COOLING / numLeds) + 2;
     for(int i=0; i<numLeds; i++)
     {
-        heat[i] = max(((int)heat[i]) - random(0, rMax), 0);
+        heat[i] = _max(((int)heat[i]) - random(0, rMax), 0);
     }
 
     // Step 2.  Heat from each cell drifts 'up' and diffuses a little
@@ -682,7 +682,7 @@ void AlaLedRgb::fire()
     if(random(255) < SPARKING)
     {
         int y = random(7);
-        heat[y] = min(heat[y] + random(160, 255), 255);
+        heat[y] = _min(heat[y] + random(160, 255), 255);
     }
 
     // Step 4.  Map from heat cells to LED colors
