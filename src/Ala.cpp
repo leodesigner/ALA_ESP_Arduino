@@ -88,14 +88,14 @@ AlaPalette alaPalCool = { 4, alaPalCool_ };
 
 
 
-int getStep(long t0, long t, int v)
+int16_t getStep(long t0, long t, int v)
 {
-  return ((millis()-t0)%t)*v/t;
+  return  (( millis() - t0) * v) /t;
 }
 
 float getStepFloat(long t0, long t, float v)
 {
-  return ((millis()-t0)%t)*v/t;
+  return  (( millis() - t0) * v) /t;
 }
 
 float mapfloat(float x, float in_min, float in_max, float out_min, float out_max)

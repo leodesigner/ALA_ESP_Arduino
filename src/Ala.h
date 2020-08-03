@@ -27,52 +27,60 @@ along with The Arduino ALA library.  If not, see
 // Drivers
 
 #define ALA_PWM 1
-#define ALA_TLC5940 2
-#define ALA_WS2812 3
+#define ALA_PWM_INVERTED 2
+#define ALA_TLC5940 3
+#define ALA_WS2812 4
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Animations
 
-#define ALA_ON 101
-#define ALA_OFF 102
-#define ALA_BLINK 103
-#define ALA_BLINKALT 104
-#define ALA_SPARKLE 105
-#define ALA_SPARKLE2 106
-#define ALA_STROBO 107
+#define ALA_ON 2
+#define ALA_OFF 3
+#define ALA_BLINK 4
+#define ALA_BLINKALT 5
+#define ALA_SPARKLE 6
+#define ALA_SPARKLE2 7
+#define ALA_STROBO 8
 
-#define ALA_CYCLECOLORS 151
+#define ALA_CYCLECOLORS 9
 
-#define ALA_PIXELSHIFTRIGHT 201
-#define ALA_PIXELSHIFTLEFT 202
-#define ALA_PIXELBOUNCE 203
-#define ALA_PIXELSMOOTHSHIFTRIGHT 211
-#define ALA_PIXELSMOOTHSHIFTLEFT 212
-#define ALA_PIXELSMOOTHBOUNCE 213
-#define ALA_COMET 221
-#define ALA_COMETCOL 222
-#define ALA_BARSHIFTRIGHT 231
-#define ALA_BARSHIFTLEFT 232
-#define ALA_MOVINGBARS 241
-#define ALA_MOVINGGRADIENT 242
-#define ALA_LARSONSCANNER 251
-#define ALA_LARSONSCANNER2 252
+#define ALA_PIXELSHIFTRIGHT 10
+#define ALA_PIXELSHIFTLEFT 11
+#define ALA_PIXELBOUNCE 12
+#define ALA_PIXELSMOOTHSHIFTRIGHT 13
+#define ALA_PIXELSMOOTHSHIFTLEFT 14
+#define ALA_PIXELSMOOTHBOUNCE 15
+#define ALA_COMET 16
+#define ALA_COMETCOL 17
+#define ALA_BARSHIFTRIGHT 18
+#define ALA_BARSHIFTLEFT 19
+#define ALA_MOVINGBARS 20
+#define ALA_MOVINGGRADIENT 21
+#define ALA_LARSONSCANNER 22
+#define ALA_LARSONSCANNER2 23
 
-#define ALA_FADEIN 301
-#define ALA_FADEOUT 302
-#define ALA_FADEINOUT 303
-#define ALA_GLOW 304
-#define ALA_PLASMA 305
+#define ALA_FADEIN 24
+#define ALA_FADEOUT 25
+#define ALA_FADEINOUT 26
+#define ALA_GLOW 27
+#define ALA_PLASMA 28
 
-#define ALA_FADECOLORS 351
-#define ALA_FADECOLORSLOOP 352
-#define ALA_PIXELSFADECOLORS 353
-#define ALA_FLAME 354
+#define ALA_FADECOLORS 29
+#define ALA_FADECOLORSLOOP 30
+#define ALA_PIXELSFADECOLORS 31
+#define ALA_FLAME 32
 
-#define ALA_FIRE 501
-#define ALA_BOUNCINGBALLS 502
-#define ALA_BUBBLES 503
+#define ALA_FIRE 33
+#define ALA_BOUNCINGBALLS 34
+#define ALA_BUBBLES 35
+
+#define ALA_FADETO      37
+
+#define ALA_SET_LEVEL0  38
+#define ALA_SET_LEVEL1  39
+#define ALA_SET_LEVEL2  40
+#define ALA_SET_LEVEL3  41
 
 #define ALA_ENDSEQ 0
 #define ALA_STOPSEQ 1
@@ -80,10 +88,12 @@ along with The Arduino ALA library.  If not, see
 ////////////////////////////////////////////////////////////////////////////////
 
 // Strobo effect duty cycle (10=1/10)
-#define ALA_STROBODC 10
+#define ALA_STROBODC 36
 
 
 ////////////////////////////////////////////////////////////////////////////////
+
+#pragma pack(push, 1)
 
 struct AlaColor
 {
@@ -126,9 +136,9 @@ struct AlaColor
 */
     AlaColor sum(AlaColor color)
     {
-        int r0 = min(color.r + r, 255);
-        int g0 = min(color.g + g, 255);
-        int b0 = min(color.b + b, 255);
+        int r0 = _min(color.r + r, 255);
+        int g0 = _min(color.g + g, 255);
+        int b0 = _min(color.b + b, 255);
         return AlaColor(r0, g0, b0);
     }
 
@@ -142,9 +152,9 @@ struct AlaColor
 
     AlaColor scale(float k)
     {
-        int r0 = min(r*k, 255);
-        int g0 = min(g*k, 255);
-        int b0 = min(b*k, 255);
+        int r0 = _min(r*k, 255);
+        int g0 = _min(g*k, 255);
+        int b0 = _min(b*k, 255);
         return AlaColor(r0, g0, b0);
     }
 
@@ -177,7 +187,7 @@ struct AlaColor
 
 struct AlaPalette
 {
-    int numColors;
+    uint16_t numColors;
     AlaColor *colors;
 
     /**
@@ -212,14 +222,9 @@ struct AlaPalette
 };
 
 
-struct AlaSeq
-{
-    int animation;
-    long speed;
-    long duration;
-    AlaPalette palette;
-};
+//int ardsdasdrr = sizeof(AlaSeq);
 
+#pragma pack(pop)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Palette definitions
@@ -253,7 +258,7 @@ extern AlaPalette alaPalCool;
 // Utility functions
 ////////////////////////////////////////////////////////////////////////////////
 
-int getStep(long t0, long t, int v);
+int16_t getStep(long t0, long t, int v);
 float getStepFloat(long t0, long t, float v);
 float mapfloat(float x, float in_min, float in_max, float out_min, float out_max);
 
