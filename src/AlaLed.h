@@ -3,7 +3,7 @@
 
 #include "Ala.h"
 
-#define DEBUGPRINTS
+//#define DEBUGPRINTS
 #define MAX_PWM_VAL 255
 #define MIN_PWM_VAL 0
 
@@ -138,7 +138,6 @@ private:
     uint16_t refreshRate;   // current refresh rate
 
     uint8_t animation;
-    //uint8_t animation_last;
     uint32_t speed;
     uint32_t duration;
     AlaSeq *animSeq;

@@ -16,7 +16,6 @@ AlaLed::AlaLed()
     britness_level[3] = 255;
     animation_step = 0;
     animation = ALA_STOPSEQ;
-    //animation_last = ALA_STOPSEQ;
 }
 
 
@@ -35,7 +34,7 @@ void AlaLed::initPWM(int numLeds, byte *pins)
     this->driver = ALA_PWM;
     this->numLeds = numLeds;
     this->pins = pins;
-    analogWriteRange(255);
+    analogWriteRange(MAX_PWM_VAL);
 
     for (int x=0; x<numLeds ; x++)
     {
@@ -116,6 +115,7 @@ void AlaLed::setAnimation(AlaSeq animSeq[])
     }
     animSeqStartTime = millis();
     this->duration = animSeq[0].duration;
+    if (this->duration < refreshMillis) this->duration = refreshMillis;
     setAnimation(animSeq[0].animation, animSeq[0].speed, true);
 }
 
@@ -194,6 +194,7 @@ bool AlaLed::runAnimation()
             {
                 setAnimation(animSeq[i].animation, animSeq[i].speed, true);
                 this->duration = animSeq[i].duration;
+                if (this->duration < refreshMillis) this->duration = refreshMillis;
                 break;
             }
             c = c + animSeq[i].duration;
