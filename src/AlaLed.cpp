@@ -541,7 +541,6 @@ void AlaLed::fadeTo()
         current_level = leds[0];
     }
 
-    // !!! duration ! 
     int16_t s = 0;
     if (britness_level[bln] > current_level) {
         s = current_level + getStep(animStartTime, duration, britness_level[bln] - current_level);
