@@ -538,13 +538,7 @@ void AlaLed::fadeTo()
 
     if (this->animation_step < 2)
     {
-        Serial.print("* Start FADETO * > ");
-        Serial.println(animation_step);
         current_level = leds[0];
-        Serial.print("Current level is: ");
-        Serial.println(current_level);
-        Serial.print("Fading to: ");
-        Serial.println(britness_level[bln]);
     }
 
     // !!! duration ! 
